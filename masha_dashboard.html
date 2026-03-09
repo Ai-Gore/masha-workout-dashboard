@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Маша — Тренировки</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0d0d14; --card:#13131f; --card2:#1a1a2e;
+  --accent:#e84b8a; --accent2:#7c5cbf; --accent3:#38d9c0;
+  --text:#f0eaff; --muted:#7a7a9a; --border:rgba(255,255,255,0.06);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(124,92,191,0.12) 0%,transparent 70%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;bottom:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(232,75,138,0.1) 0%,transparent 70%);pointer-events:none;z-index:0;}
+
+/* ─── VIEWS ─── */
+.view{display:none;} .view.active{display:block;}
+
+/* ─── MAIN ─── */
+.container{max-width:1280px;margin:0 auto;padding:40px 24px;position:relative;z-index:1;}
+header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:48px;flex-wrap:wrap;gap:16px;}
+.header-left h1{font-size:clamp(28px,5vw,52px);font-weight:900;line-height:1;background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;}
+.header-left p{color:var(--muted);font-size:14px;margin-top:6px;letter-spacing:0.05em;text-transform:uppercase;}
+.period-badge{background:var(--card2);border:1px solid var(--border);border-radius:100px;padding:8px 18px;font-size:13px;color:var(--muted);}
+.period-badge span{color:var(--text);font-weight:600;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px 20px;position:relative;overflow:hidden;animation:fadeUp 0.6s ease both;transition:transform 0.2s,box-shadow 0.2s;}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(232,75,138,0.1);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity 0.3s;}
+.kpi-card:hover::before{opacity:1;}
+.kpi-card:nth-child(1){animation-delay:0.0s}.kpi-card:nth-child(2){animation-delay:0.1s}.kpi-card:nth-child(3){animation-delay:0.2s}.kpi-card:nth-child(4){animation-delay:0.3s}
+.kpi-icon{font-size:22px;margin-bottom:12px;}
+.kpi-value{font-size:clamp(22px,3vw,34px);font-weight:700;line-height:1;}
+.kpi-value.pink{color:var(--accent)}.kpi-value.teal{color:var(--accent3)}.kpi-value.purple{color:var(--accent2)}
+.kpi-label{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:0.06em;}
+.kpi-delta{font-size:12px;margin-top:8px;font-weight:600;}
+.kpi-delta.pos{color:var(--accent3)}.kpi-delta.neg{color:#f87171}.kpi-delta.neu{color:var(--muted)}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px;}
+.charts-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+@media(max-width:900px){.charts-grid,.charts-grid-2{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 24px;animation:fadeUp 0.6s ease both;}
+.chart-card-full{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 24px;margin-bottom:20px;animation:fadeUp 0.6s ease both;}
+.chart-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.03em;margin-bottom:4px;text-transform:uppercase;}
+.chart-subtitle{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.chart-wrap{position:relative;height:240px;}
+.chart-wrap-sm{position:relative;height:185px;}
+.ex-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.ex-tab{background:var(--card2);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-size:11px;color:var(--muted);cursor:pointer;transition:all 0.2s;font-weight:500;}
+.ex-tab:hover{color:var(--text);border-color:var(--accent2);}
+.ex-tab.active{background:var(--accent);border-color:var(--accent);color:white;}
+.meas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
+.meas-item{background:var(--card2);border-radius:12px;padding:14px 16px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;}
+.meas-item:hover{border-color:var(--accent3);transform:translateY(-2px);}
+.meas-name{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+.meas-values{display:flex;align-items:baseline;gap:6px;margin-top:4px;}
+.meas-now{font-size:18px;font-weight:700;}
+.meas-unit{font-size:11px;color:var(--muted);}
+.meas-delta{font-size:12px;font-weight:600;margin-top:2px;}
+.meas-delta.neg{color:var(--accent3)}.meas-delta.pos{color:#f87171}.meas-delta.zero{color:var(--muted)}
+.freq-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.freq-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:transform 0.2s;position:relative;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;}
+.freq-dot:hover{transform:scale(1.2);}
+.freq-dot:hover .tooltip{opacity:1;}
+.tooltip{position:absolute;bottom:38px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:10px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.2s;color:var(--text);z-index:10;}
+.prog-bars{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;}
+.prog-name{color:var(--text);font-weight:500;}.prog-val{color:var(--muted);}
+.prog-track{height:6px;background:var(--card2);border-radius:100px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1.2s cubic-bezier(0.4,0,0.2,1);}
+.note-banner{background:rgba(56,217,192,0.08);border:1px solid rgba(56,217,192,0.2);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--accent3);margin-bottom:20px;}
+.footer{text-align:center;margin-top:48px;padding-top:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+.meas-drill-hint{font-size:11px;color:var(--accent3);margin-top:8px;opacity:0.8;}
+
+/* ─── DRILL-DOWN OVERLAY ─── */
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,5,10,0.85);z-index:100;display:none;backdrop-filter:blur(6px);overflow-y:auto;}
+.overlay.active{display:block;}
+.overlay-inner{max-width:1100px;margin:0 auto;padding:32px 24px;}
+.overlay-header{display:flex;align-items:center;gap:16px;margin-bottom:32px;}
+.back-btn{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;color:var(--text);cursor:pointer;transition:all 0.2s;font-family:inherit;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+.overlay-title{font-size:clamp(20px,4vw,36px);font-weight:900;background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.overlay-subtitle{font-size:13px;color:var(--muted);margin-top:2px;}
+
+/* workout detail */
+.workout-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:600px){.workout-kpis{grid-template-columns:repeat(2,1fr);}}
+.wkpi{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;}
+.wkpi-val{font-size:24px;font-weight:700;}
+.wkpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+.exercises-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:28px;}
+.ex-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;}
+.ex-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.ex-card-name{font-size:14px;font-weight:600;}
+.ex-card-vol{font-size:12px;color:var(--muted);}
+.sets-row{display:flex;gap:10px;flex-wrap:wrap;}
+.set-badge{background:var(--card2);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;border:1px solid var(--border);}
+.set-badge span{color:var(--muted);font-weight:400;font-size:11px;}
+.workout-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+@media(max-width:700px){.workout-charts-grid{grid-template-columns:1fr;}}
+.wc-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.wc-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-bottom:14px;}
+.wc-wrap{height:200px;position:relative;}
+
+/* measurements detail */
+.meas-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+@media(max-width:600px){.meas-detail-grid{grid-template-columns:1fr 1fr;}}
+.meas-detail-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;}
+.mdc-name{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.mdc-values{display:flex;align-items:baseline;gap:8px;}
+.mdc-before{font-size:18px;font-weight:400;color:var(--muted);}
+.mdc-arrow{font-size:16px;}
+.mdc-after{font-size:26px;font-weight:700;}
+.mdc-after.better{color:var(--accent3);}
+.mdc-after.same{color:var(--text);}
+.mdc-after.worse{color:#f87171;}
+.mdc-change{font-size:12px;font-weight:600;margin-top:4px;}
+.mdc-change.neg{color:var(--accent3)}.mdc-change.pos{color:#f87171}.mdc-change.zero{color:var(--muted)}
+.meas-charts-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.meas-charts-wrap{grid-template-columns:1fr;}}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ MAIN DASHBOARD ═══════════ -->
+<div id="mainView" class="view active">
+<div class="container">
+  <header>
+    <div class="header-left">
+      <h1>МАША</h1>
+      <p>Дашборд тренировок · Ноябрь 2025 — Февраль 2026</p>
+    </div>
+    <div class="period-badge">Обновлено: <span>25.02.2026</span></div>
+  </header>
+
+  <div class="note-banner">
+    ℹ️ Подтягивания в гравитроне: значение — противовес (кг). Чем <strong style="margin:0 3px">меньше</strong> цифра → тем тяжелее. На графике ось перевёрнута.
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-icon">🏋️</div><div class="kpi-value pink">19</div><div class="kpi-label">Тренировок всего</div><div class="kpi-delta pos">↑ 4 месяца прогресса</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚡</div><div class="kpi-value teal">5 624</div><div class="kpi-label">Макс. тоннаж (кг)</div><div class="kpi-delta pos">↑ Рекорд 25.02.2026</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-value purple">3 753</div><div class="kpi-label">Средний тоннаж (кг)</div><div class="kpi-delta pos">↑ Устойчивый рост</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚖️</div><div class="kpi-value">77.2</div><div class="kpi-label">Вес тела (кг)</div><div class="kpi-delta neu">→ Стабилен</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Тоннаж по тренировкам</div>
+      <div class="chart-subtitle">Суммарный объём нагрузки (вес × повторения)</div>
+      <div class="chart-wrap"><canvas id="tonnageChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Частота тренировок</div>
+      <div class="chart-subtitle">Нажми на дату — посмотри тренировку</div>
+      <div id="freqDots" class="freq-row"></div>
+      <div style="margin-top:20px;">
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;">По месяцам</div>
+        <div class="prog-bars" id="monthBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card-full">
+    <div class="chart-title">Прогресс по упражнениям</div>
+    <div class="chart-subtitle">Максимальный рабочий вес (кг) за каждую тренировку</div>
+    <div class="ex-tabs" id="exTabs"></div>
+    <div class="chart-wrap" style="height:260px;"><canvas id="exChart"></canvas></div>
+  </div>
+
+  <div class="charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Динамика веса тела</div>
+      <div class="chart-subtitle">кг — 4 замера (январь–февраль 2026)</div>
+      <div class="chart-wrap-sm"><canvas id="weightChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Замеры тела</div>
+      <div class="chart-subtitle">Ноябрь 2025 → Февраль 2026</div>
+      <div class="meas-drill-hint">👆 Нажми на карточку замера — увидишь детали</div>
+      <div class="meas-grid" id="measGrid"></div>
+    </div>
+  </div>
+
+  <div class="footer">Данные из дневника тренировок Маши · 05.11.2025 — 25.02.2026 · 10 упражнений</div>
+</div>
+</div>
+
+<!-- ═══════════ WORKOUT DETAIL OVERLAY ═══════════ -->
+<div id="workoutOverlay" class="overlay">
+<div class="overlay-inner">
+  <div class="overlay-header">
+    <button class="back-btn" onclick="closeOverlay('workoutOverlay')">← Назад</button>
+    <div>
+      <div class="overlay-title" id="woTitle">Тренировка</div>
+      <div class="overlay-subtitle" id="woSubtitle"></div>
+    </div>
+  </div>
+  <div class="workout-kpis" id="woKpis"></div>
+  <div class="workout-charts-grid">
+    <div class="wc-card">
+      <div class="wc-title">Тоннаж по упражнениям</div>
+      <div class="wc-wrap"><canvas id="woTonnageChart"></canvas></div>
+    </div>
+    <div class="wc-card">
+      <div class="wc-title">Повторения по подходам</div>
+      <div class="wc-wrap"><canvas id="woRepsChart"></canvas></div>
+    </div>
+  </div>
+  <div class="exercises-grid" id="woExercises"></div>
+</div>
+</div>
+
+<!-- ═══════════ MEASUREMENTS DETAIL OVERLAY ═══════════ -->
+<div id="measOverlay" class="overlay">
+<div class="overlay-inner">
+  <div class="overlay-header">
+    <button class="back-btn" onclick="closeOverlay('measOverlay')">← Назад</button>
+    <div>
+      <div class="overlay-title">Замеры тела</div>
+      <div class="overlay-subtitle">06.11.2025 → 06.02.2026</div>
+    </div>
+  </div>
+  <div class="meas-detail-grid" id="measDetailCards"></div>
+  <div class="meas-charts-wrap" id="measChartsWrap"></div>
+</div>
+</div>
+
+<script>
+// ═══ DATA ═══
+const WORKOUT_DATA = {"05.11.2025":{"Разведения ног":[{"kg":55.0,"reps":12},{"kg":57.5,"reps":12},{"kg":57.5,"reps":12}],"Сгибания ног":[{"kg":15.0,"reps":12},{"kg":15.0,"reps":12},{"kg":15.0,"reps":12}],"Тяга горизонтальная":[{"kg":21.0,"reps":10},{"kg":21.0,"reps":10},{"kg":21.0,"reps":10}],"Подтягивания":[{"kg":75.0,"reps":6},{"kg":75.0,"reps":6},{"kg":75.0,"reps":6}]},"10.11.2025":{"Тяга горизонтальная":[{"kg":16.5,"reps":10},{"kg":19.0,"reps":10},{"kg":19.0,"reps":10}],"Махи на плечи":[{"kg":2.0,"reps":10},{"kg":2.0,"reps":10},{"kg":2.0,"reps":10}],"Разгибания трицепс":[{"kg":8.0,"reps":10},{"kg":8.0,"reps":10},{"kg":8.0,"reps":10}],"Рычаг блок":[{"kg":15.0,"reps":10},{"kg":12.5,"reps":10},{"kg":10.0,"reps":10}],"Жим в тренажере":[{"kg":10.0,"reps":10},{"kg":10.0,"reps":10},{"kg":10.0,"reps":10}]},"19.11.2025":{"Разведения ног":[{"kg":60.0,"reps":12},{"kg":60.0,"reps":12},{"kg":60.0,"reps":12}],"Сгибания ног":[{"kg":15.0,"reps":12},{"kg":15.0,"reps":12},{"kg":15.0,"reps":12}],"Тяга горизонтальная":[{"kg":21.0,"reps":10},{"kg":21.0,"reps":10},{"kg":21.0,"reps":10}],"Подтягивания":[{"kg":75.0,"reps":7},{"kg":75.0,"reps":7},{"kg":75.0,"reps":7}]},"24.11.2025":{"Жим платформы":[{"kg":10.0,"reps":10},{"kg":25.0,"reps":10}],"Тяга горизонтальная":[{"kg":21.0,"reps":10},{"kg":21.0,"reps":10},{"kg":21.0,"reps":10}],"Махи на плечи":[{"kg":2.0,"reps":15},{"kg":2.0,"reps":15},{"kg":2.0,"reps":15}],"Разгибания трицепс":[{"kg":10.0,"reps":10},{"kg":10.0,"reps":10},{"kg":10.0,"reps":10}],"Рычаг блок":[{"kg":15.0,"reps":12},{"kg":15.0,"reps":12},{"kg":15.0,"reps":12}],"Жим в тренажере":[{"kg":12.5,"reps":8},{"kg":12.5,"reps":9},{"kg":12.5,"reps":10}]},"26.11.2025":{"Разведения ног":[{"kg":65.0,"reps":12},{"kg":65.0,"reps":12},{"kg":65.0,"reps":12}],"Сгибания ног":[{"kg":20.0,"reps":12},{"kg":20.0,"reps":12},{"kg":20.0,"reps":12}],"Жим платформы":[{"kg":25.0,"reps":10},{"kg":25.0,"reps":10},{"kg":25.0,"reps":10}],"Тяга горизонтальная":[{"kg":23.5,"reps":10},{"kg":23.5,"reps":10},{"kg":23.5,"reps":8}],"Подтягивания":[{"kg":75.0,"reps":8},{"kg":75.0,"reps":8},{"kg":75.0,"reps":8}],"Махи на плечи":[{"kg":2.0,"reps":12},{"kg":2.0,"reps":12},{"kg":2.0,"reps":12}],"Разгибания трицепс":[{"kg":11.0,"reps":10},{"kg":11.0,"reps":10},{"kg":11.0,"reps":10}]},"03.12.2025":{"Разведения ног":[{"kg":80.0,"reps":12},{"kg":80.0,"reps":12},{"kg":80.0,"reps":12}],"Жим платформы":[{"kg":15.0,"reps":10},{"kg":15.0,"reps":10},{"kg":15.0,"reps":10}],"Тяга горизонтальная":[{"kg":21.0,"reps":12},{"kg":21.0,"reps":12},{"kg":21.0,"reps":12}],"Махи на плечи":[{"kg":3.0,"reps":8},{"kg":3.0,"reps":8},{"kg":3.0,"reps":8}],"Разгибания трицепс":[{"kg":11.0,"reps":10},{"kg":11.0,"reps":10},{"kg":11.0,"reps":10}],"Рычаг блок":[{"kg":17.5,"reps":8},{"kg":17.5,"reps":8},{"kg":17.5,"reps":8}],"Жим в тренажере":[{"kg":12.5,"reps":10},{"kg":12.5,"reps":10},{"kg":12.5,"reps":10}]},"10.12.2025":{"Разведения ног":[{"kg":67.5,"reps":12},{"kg":67.5,"reps":12},{"kg":67.5,"reps":12}],"Сгибания ног":[{"kg":22.5,"reps":12},{"kg":22.5,"reps":12},{"kg":22.5,"reps":12}],"Жим платформы":[{"kg":25.0,"reps":12},{"kg":25.0,"reps":12},{"kg":25.0,"reps":12}],"Тяга горизонтальная":[{"kg":23.5,"reps":12},{"kg":23.5,"reps":12},{"kg":23.5,"reps":12}],"Подтягивания":[{"kg":75.0,"reps":9},{"kg":75.0,"reps":9},{"kg":75.0,"reps":9}],"Махи на плечи":[{"kg":2.0,"reps":12},{"kg":2.0,"reps":15},{"kg":2.0,"reps":15}],"Разгибания трицепс":[{"kg":11.0,"reps":11},{"kg":11.0,"reps":11},{"kg":11.0,"reps":11}]},"12.12.2025":{"Разведения ног":[{"kg":82.5,"reps":12},{"kg":82.5,"reps":12},{"kg":82.5,"reps":12}],"Жим платформы":[{"kg":25.0,"reps":12},{"kg":25.0,"reps":12},{"kg":25.0,"reps":12}],"Тяга горизонтальная":[{"kg":23.5,"reps":8},{"kg":23.5,"reps":9},{"kg":23.5,"reps":10}],"Махи на плечи":[{"kg":3.0,"reps":8},{"kg":3.0,"reps":8},{"kg":3.0,"reps":8}],"Разгибания трицепс":[{"kg":12.5,"reps":10},{"kg":12.5,"reps":10},{"kg":12.5,"reps":10}],"Рычаг блок":[{"kg":17.5,"reps":10},{"kg":17.5,"reps":10},{"kg":17.5,"reps":10}],"Жим в тренажере":[{"kg":12.5,"reps":12},{"kg":12.5,"reps":12},{"kg":12.5,"reps":12}]},"17.12.2025":{"Разведения ног":[{"kg":70.0,"reps":12},{"kg":70.0,"reps":12},{"kg":70.0,"reps":12}],"Сгибания ног":[{"kg":25.0,"reps":10},{"kg":25.0,"reps":10},{"kg":25.0,"reps":10}],"Жим платформы":[{"kg":30.0,"reps":8},{"kg":30.0,"reps":8},{"kg":30.0,"reps":8}],"Приседания с гирей":[{"kg":8.0,"reps":10},{"kg":8.0,"reps":10},{"kg":8.0,"reps":10}],"Тяга горизонтальная":[{"kg":28.0,"reps":8},{"kg":28.0,"reps":8},{"kg":28.0,"reps":8}],"Подтягивания":[{"kg":73.0,"reps":6},{"kg":73.0,"reps":6},{"kg":73.0,"reps":6}],"Махи на плечи":[{"kg":3.0,"reps":12},{"kg":3.0,"reps":12},{"kg":3.0,"reps":12}],"Разгибания трицепс":[{"kg":11.0,"reps":11},{"kg":11.0,"reps":11}]},"24.12.2025":{"Жим платформы":[{"kg":30.0,"reps":12},{"kg":30.0,"reps":12},{"kg":30.0,"reps":12}],"Тяга горизонтальная":[{"kg":23.5,"reps":10},{"kg":23.5,"reps":10},{"kg":23.5,"reps":10}],"Махи на плечи":[{"kg":3.0,"reps":12},{"kg":3.0,"reps":12},{"kg":3.0,"reps":12}],"Разгибания трицепс":[{"kg":12.5,"reps":12},{"kg":12.5,"reps":12},{"kg":12.5,"reps":12}],"Рычаг блок":[{"kg":17.5,"reps":10},{"kg":17.5,"reps":10},{"kg":17.5,"reps":10}],"Жим в тренажере":[{"kg":12.5,"reps":12},{"kg":12.5,"reps":12},{"kg":12.5,"reps":12}]},"06.01.2026":{"Разведения ног":[{"kg":60.0,"reps":15},{"kg":60.0,"reps":15},{"kg":60.0,"reps":15}],"Сгибания ног":[{"kg":22.5,"reps":10},{"kg":22.5,"reps":10},{"kg":22.5,"reps":10}],"Жим платформы":[{"kg":25.0,"reps":6},{"kg":25.0,"reps":6},{"kg":25.0,"reps":6}],"Приседания с гирей":[{"kg":8.0,"reps":8},{"kg":8.0,"reps":8},{"kg":8.0,"reps":8}]},"12.01.2026":{"Разведения ног":[{"kg":80.0,"reps":15},{"kg":80.0,"reps":15},{"kg":80.0,"reps":15}],"Тяга горизонтальная":[{"kg":21.0,"reps":12},{"kg":21.0,"reps":12},{"kg":21.0,"reps":12}],"Махи на плечи":[{"kg":3.0,"reps":12},{"kg":3.0,"reps":12},{"kg":3.0,"reps":12}],"Разгибания трицепс":[{"kg":12.5,"reps":12},{"kg":12.5,"reps":12},{"kg":12.5,"reps":12}],"Рычаг блок":[{"kg":15.0,"reps":10},{"kg":15.0,"reps":10},{"kg":15.0,"reps":10}],"Жим в тренажере":[{"kg":12.5,"reps":12},{"kg":12.5,"reps":12},{"kg":12.5,"reps":12}]},"14.01.2026":{"Разведения ног":[{"kg":70.0,"reps":15},{"kg":70.0,"reps":15},{"kg":70.0,"reps":15}],"Сгибания ног":[{"kg":25.0,"reps":12},{"kg":25.0,"reps":12},{"kg":25.0,"reps":12}],"Жим платформы":[{"kg":30.0,"reps":10},{"kg":30.0,"reps":10},{"kg":30.0,"reps":10}],"Приседания с гирей":[{"kg":8.0,"reps":9},{"kg":8.0,"reps":9},{"kg":8.0,"reps":9}],"Махи на плечи":[{"kg":3.0,"reps":12},{"kg":3.0,"reps":12},{"kg":3.0,"reps":12}],"Разгибания трицепс":[{"kg":13.0,"reps":8},{"kg":11.0,"reps":10},{"kg":8.0,"reps":12}]},"23.01.2026":{"Разведения ног":[{"kg":82.5,"reps":12},{"kg":82.5,"reps":12},{"kg":82.5,"reps":12}],"Жим платформы":[{"kg":25.0,"reps":10},{"kg":30.0,"reps":10},{"kg":35.0,"reps":10}],"Тяга горизонтальная":[{"kg":23.5,"reps":10},{"kg":23.5,"reps":10},{"kg":23.5,"reps":10}],"Махи на плечи":[{"kg":3.0,"reps":15},{"kg":3.0,"reps":15},{"kg":3.0,"reps":15}],"Разгибания трицепс":[{"kg":12.5,"reps":13},{"kg":12.5,"reps":13},{"kg":12.5,"reps":13}],"Рычаг блок":[{"kg":20.0,"reps":6},{"kg":20.0,"reps":6},{"kg":20.0,"reps":6}],"Жим в тренажере":[{"kg":12.5,"reps":10},{"kg":12.5,"reps":10},{"kg":12.5,"reps":10}]},"26.01.2026":{"Разведения ног":[{"kg":75.0,"reps":12},{"kg":75.0,"reps":12},{"kg":75.0,"reps":12}],"Сгибания ног":[{"kg":27.5,"reps":12},{"kg":27.5,"reps":12},{"kg":27.5,"reps":12}],"Жим платформы":[{"kg":35.0,"reps":10},{"kg":35.0,"reps":10},{"kg":35.0,"reps":10}],"Приседания с гирей":[{"kg":8.0,"reps":10},{"kg":8.0,"reps":10},{"kg":8.0,"reps":10}],"Тяга горизонтальная":[{"kg":28.0,"reps":10},{"kg":28.0,"reps":10},{"kg":28.0,"reps":10}],"Подтягивания":[{"kg":73.0,"reps":7},{"kg":73.0,"reps":7},{"kg":73.0,"reps":5}],"Махи на плечи":[{"kg":3.0,"reps":14},{"kg":3.0,"reps":14},{"kg":3.0,"reps":14}]},"04.02.2026":{"Разведения ног":[{"kg":85.0,"reps":12},{"kg":85.0,"reps":12},{"kg":85.0,"reps":12}],"Жим платформы":[{"kg":30.0,"reps":8},{"kg":35.0,"reps":8},{"kg":40.0,"reps":8}],"Тяга горизонтальная":[{"kg":28.0,"reps":8},{"kg":28.0,"reps":8},{"kg":28.0,"reps":8}],"Махи на плечи":[{"kg":4.0,"reps":8},{"kg":4.0,"reps":8},{"kg":4.0,"reps":8}],"Разгибания трицепс":[{"kg":13.0,"reps":8},{"kg":13.0,"reps":9},{"kg":13.0,"reps":10}],"Рычаг блок":[{"kg":20.0,"reps":7},{"kg":20.0,"reps":7},{"kg":20.0,"reps":6}],"Жим в тренажере":[{"kg":12.5,"reps":10},{"kg":12.5,"reps":10},{"kg":12.5,"reps":10}]},"13.02.2026":{"Разведения ног":[{"kg":85.0,"reps":12},{"kg":85.0,"reps":12},{"kg":85.0,"reps":12}],"Сгибания ног":[{"kg":30.0,"reps":10},{"kg":30.0,"reps":10},{"kg":30.0,"reps":10}],"Жим платформы":[{"kg":40.0,"reps":10},{"kg":40.0,"reps":10},{"kg":40.0,"reps":10}],"Приседания с гирей":[{"kg":8.0,"reps":12},{"kg":8.0,"reps":12},{"kg":8.0,"reps":9}],"Тяга горизонтальная":[{"kg":28.0,"reps":11},{"kg":28.0,"reps":11},{"kg":28.0,"reps":11}]},"16.02.2026":{"Разведения ног":[{"kg":90.0,"reps":12},{"kg":90.0,"reps":12}],"Жим платформы":[{"kg":25.0,"reps":11},{"kg":25.0,"reps":11},{"kg":25.0,"reps":11}],"Тяга горизонтальная":[{"kg":28.0,"reps":10},{"kg":28.0,"reps":10},{"kg":28.0,"reps":10}],"Махи на плечи":[{"kg":4.0,"reps":9},{"kg":4.0,"reps":9},{"kg":4.0,"reps":9}],"Разгибания трицепс":[{"kg":12.5,"reps":15},{"kg":12.5,"reps":15},{"kg":12.5,"reps":15}],"Рычаг блок":[{"kg":20.0,"reps":8},{"kg":20.0,"reps":8},{"kg":20.0,"reps":8}],"Жим в тренажере":[{"kg":12.5,"reps":10},{"kg":12.5,"reps":10},{"kg":12.5,"reps":10}]},"25.02.2026":{"Разведения ног":[{"kg":87.5,"reps":12},{"kg":87.5,"reps":12},{"kg":87.5,"reps":12}],"Сгибания ног":[{"kg":30.0,"reps":12},{"kg":30.0,"reps":12},{"kg":30.0,"reps":12}],"Жим платформы":[{"kg":45.0,"reps":8},{"kg":45.0,"reps":8},{"kg":45.0,"reps":8}],"Приседания с гирей":[{"kg":8.0,"reps":10},{"kg":8.0,"reps":10},{"kg":8.0,"reps":10}],"Тяга горизонтальная":[{"kg":28.0,"reps":11},{"kg":28.0,"reps":11},{"kg":28.0,"reps":8}],"Подтягивания":[{"kg":73.0,"reps":7},{"kg":73.0,"reps":7},{"kg":73.0,"reps":7}],"Махи на плечи":[{"kg":3.0,"reps":15},{"kg":3.0,"reps":15},{"kg":3.0,"reps":15}],"Разгибания трицепс":[{"kg":13.0,"reps":8},{"kg":13.0,"reps":8},{"kg":13.0,"reps":8}]}};
+
+const TONNAGE = {"05.11.2025":3048,"10.11.2025":1000,"19.11.2025":3270,"24.11.2025":1594,"26.11.2025":4468,"03.12.2025":3504,"10.12.2025":4934,"12.12.2025":3875,"17.12.2025":4337,"24.12.2025":2168,"06.01.2026":2668,"12.01.2026":3852,"14.01.2026":3684,"23.01.2026":3960,"26.01.2026":4974,"04.02.2026":3893,"13.02.2026":4248,"16.02.2026":3182,"25.02.2026":5624};
+const DATES = Object.keys(TONNAGE);
+const WEIGHT_DATA = [{d:'24.01',w:77.35},{d:'08.02',w:76.9},{d:'19.02',w:78.0},{d:'25.02',w:77.2}];
+const MEASUREMENTS = {
+  'Бицепс':   {before:32, after:31,  unit:'см', less_is_ok:true},
+  'Грудь':    {before:96, after:96,  unit:'см', less_is_ok:false},
+  'Талия':    {before:78, after:null,unit:'см', less_is_ok:true},
+  'Бедра':    {before:110,after:109, unit:'см', less_is_ok:true},
+  'Живот':    {before:101,after:99,  unit:'см', less_is_ok:true},
+  'Бедро':    {before:65, after:64,  unit:'см', less_is_ok:true}
+};
+
+const ACCENT='#e84b8a',ACCENT2='#7c5cbf',ACCENT3='#38d9c0',MUTED='#7a7a9a',TEXT='#f0eaff';
+Chart.defaults.color = MUTED;
+Chart.defaults.font.family = '-apple-system,BlinkMacSystemFont,sans-serif';
+
+let woTonnChart = null, woRepsChart = null, exChartInst = null;
+
+// ═══ OVERLAY ═══
+function openWorkout(date) {
+  const overlay = document.getElementById('workoutOverlay');
+  const data = WORKOUT_DATA[date];
+  if (!data) return;
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('woTitle').textContent = date;
+  const exCount = Object.keys(data).length;
+  const totalSets = Object.values(data).reduce((s, sets) => s + sets.length, 0);
+  const totalReps = Object.values(data).reduce((s, sets) => s + sets.reduce((r, st) => r + st.reps, 0), 0);
+  const tonnage = TONNAGE[date];
+  document.getElementById('woSubtitle').textContent = `${exCount} упражнений · ${totalSets} подходов · ${totalReps} повторений`;
+
+  // KPIs
+  document.getElementById('woKpis').innerHTML = `
+    <div class="wkpi"><div class="wkpi-val" style="color:${ACCENT}">${tonnage.toLocaleString('ru')}</div><div class="wkpi-lbl">Тоннаж (кг)</div></div>
+    <div class="wkpi"><div class="wkpi-val" style="color:${ACCENT3}">${totalSets}</div><div class="wkpi-lbl">Подходов</div></div>
+    <div class="wkpi"><div class="wkpi-val" style="color:${ACCENT2}">${totalReps}</div><div class="wkpi-lbl">Повторений</div></div>
+  `;
+
+  // Exercise cards
+  const exDiv = document.getElementById('woExercises');
+  exDiv.innerHTML = '';
+  for (const [name, sets] of Object.entries(data)) {
+    const vol = sets.reduce((s, st) => s + st.kg * st.reps, 0);
+    const maxKg = Math.max(...sets.map(s => s.kg));
+    const setsHTML = sets.map((s, i) => `<div class="set-badge">${s.kg} кг × ${s.reps} <span>п${i+1}</span></div>`).join('');
+    exDiv.innerHTML += `
+      <div class="ex-card">
+        <div class="ex-card-header">
+          <div class="ex-card-name">${name}</div>
+          <div class="ex-card-vol">Тоннаж: <strong>${vol.toLocaleString('ru')} кг</strong> · Макс: <strong>${maxKg} кг</strong></div>
+        </div>
+        <div class="sets-row">${setsHTML}</div>
+      </div>`;
+  }
+
+  // Charts
+  setTimeout(() => {
+    if (woTonnChart) woTonnChart.destroy();
+    if (woRepsChart) woRepsChart.destroy();
+
+    const exNames = Object.keys(data);
+    const tonnages = exNames.map(n => data[n].reduce((s, st) => s + st.kg * st.reps, 0));
+    const colors = [ACCENT, ACCENT2, ACCENT3, '#f59e0b', '#60a5fa', '#a78bfa', '#34d399', '#fb923c', '#f472b6', '#94a3b8'];
+
+    woTonnChart = new Chart(document.getElementById('woTonnageChart'), {
+      type: 'doughnut',
+      data: {
+        labels: exNames,
+        datasets: [{ data: tonnages, backgroundColor: colors.slice(0, exNames.length), borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: { legend: { position: 'right', labels: { font: { size: 10 }, padding: 8 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString('ru')} кг` } } }
+      }
+    });
+
+    // Reps per set per exercise
+    const setLabels = ['Подход 1', 'Подход 2', 'Подход 3'];
+    const repsDatasets = exNames.slice(0, 5).map((n, i) => ({
+      label: n, data: [0,1,2].map(si => data[n][si]?.reps ?? null),
+      backgroundColor: colors[i] + '88', borderColor: colors[i], borderWidth: 1.5,
+      borderRadius: 4
+    }));
+    woRepsChart = new Chart(document.getElementById('woRepsChart'), {
+      type: 'bar',
+      data: { labels: setLabels, datasets: repsDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { font: { size: 10 } } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} повт` } } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => v + ' повт' } }
+        }
+      }
+    });
+  }, 50);
+}
+
+function openMeasurements() {
+  const overlay = document.getElementById('measOverlay');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Detail cards
+  const grid = document.getElementById('measDetailCards');
+  grid.innerHTML = '';
+  for (const [name, d] of Object.entries(MEASUREMENTS)) {
+    const val = d.after !== null ? d.after : d.before;
+    const hasAfter = d.after !== null;
+    let delta = '—', deltaClass = 'zero', afterClass = 'same', arrow = '';
+    if (hasAfter) {
+      const diff = d.after - d.before;
+      delta = (diff > 0 ? '+' : '') + diff + ' см';
+      const improved = d.less_is_ok ? diff < 0 : diff > 0;
+      const worsened = d.less_is_ok ? diff > 0 : diff < 0;
+      afterClass = improved ? 'better' : worsened ? 'worse' : 'same';
+      deltaClass = improved ? 'neg' : worsened ? 'pos' : 'zero';
+      arrow = diff < 0 ? '↓' : diff > 0 ? '↑' : '→';
+    }
+    grid.innerHTML += `
+      <div class="meas-detail-card">
+        <div class="mdc-name">${name}</div>
+        <div class="mdc-values">
+          ${hasAfter ? `<span class="mdc-before">${d.before}</span><span class="mdc-arrow">→</span>` : ''}
+          <span class="mdc-after ${afterClass}">${val}</span>
+          <span style="font-size:12px;color:var(--muted)">${d.unit}</span>
+        </div>
+        <div class="mdc-change ${deltaClass}">${arrow} ${delta}</div>
+      </div>`;
+  }
+
+  // Charts for measurements with data
+  const wrap = document.getElementById('measChartsWrap');
+  wrap.innerHTML = '';
+  const measWithData = Object.entries(MEASUREMENTS).filter(([,d]) => d.after !== null);
+  measWithData.forEach(([name, d]) => {
+    const id = 'measChart_' + name.replace(/\s/g,'');
+    wrap.innerHTML += `<div class="wc-card"><div class="wc-title">${name}</div><div class="wc-wrap"><canvas id="${id}"></canvas></div></div>`;
+    setTimeout(() => {
+      new Chart(document.getElementById(id), {
+        type: 'bar',
+        data: {
+          labels: ['06.11.2025', '06.02.2026'],
+          datasets: [{
+            data: [d.before, d.after],
+            backgroundColor: [ACCENT2 + '99', ACCENT3 + 'cc'],
+            borderColor: [ACCENT2, ACCENT3],
+            borderWidth: 2, borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} ${d.unit}` } } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' },
+              min: Math.min(d.before, d.after) - 3,
+              max: Math.max(d.before, d.after) + 3,
+              ticks: { callback: v => v + ' ' + d.unit } }
+          }
+        }
+      });
+    }, 50);
+  });
+}
+
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// ═══ MAIN CHARTS ═══
+document.addEventListener('DOMContentLoaded', () => {
+  const avg = Math.round(DATES.reduce((s, d) => s + TONNAGE[d], 0) / DATES.length);
+
+  // Tonnage chart (clickable points)
+  const tonnCtx = document.getElementById('tonnageChart');
+  const tonnChart = new Chart(tonnCtx, {
+    type: 'line',
+    data: {
+      labels: DATES.map(d => d.slice(0,5)),
+      datasets: [
+        { label: 'Тоннаж', data: DATES.map(d => TONNAGE[d]), borderColor: ACCENT, borderWidth: 2.5,
+          pointBackgroundColor: ACCENT, pointRadius: 5, pointHoverRadius: 9, pointCursor: 'pointer',
+          fill: true, backgroundColor: (ctx) => { const g=ctx.chart.ctx.createLinearGradient(0,0,0,300); g.addColorStop(0,'rgba(232,75,138,0.35)'); g.addColorStop(1,'rgba(232,75,138,0)'); return g; }, tension: 0.4 },
+        { label: 'Среднее', data: DATES.map(() => avg), borderColor: 'rgba(124,92,191,0.5)', borderWidth: 1.5,
+          borderDash: [6,4], pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1a1a2e', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12,
+          callbacks: { label: ctx => ctx.dataset.label === 'Среднее' ? ` Среднее: ${ctx.parsed.y.toLocaleString('ru')} кг` : ` ${ctx.parsed.y.toLocaleString('ru')} кг · нажми для деталей` } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => (v/1000).toFixed(1) + 'т' } }
+      },
+      onClick: (e, els) => { if (els.length && els[0].datasetIndex === 0) openWorkout(DATES[els[0].index]); }
+    }
+  });
+  tonnCtx.style.cursor = 'pointer';
+
+  // Frequency dots
+  const fc = document.getElementById('freqDots');
+  DATES.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'freq-dot';
+    el.innerHTML = `<span>${i+1}</span><div class="tooltip">${d}</div>`;
+    el.onclick = () => openWorkout(d);
+    fc.appendChild(el);
+  });
+
+  // Month bars
+  const months = {'Ноябрь':5,'Декабрь':5,'Январь':5,'Февраль':4};
+  const mb = document.getElementById('monthBars');
+  Object.entries(months).forEach(([m, c]) => {
+    const el = document.createElement('div');
+    el.innerHTML = `<div class="prog-header"><span class="prog-name">${m}</span><span class="prog-val">${c} тр.</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:0%" data-w="${Math.round(c/5*100)}%"></div></div>`;
+    mb.appendChild(el);
+  });
+  setTimeout(() => document.querySelectorAll('.prog-fill').forEach(el => el.style.width = el.dataset.w), 300);
+
+  // Exercise progress chart
+  const exData = {
+    'Разведения ног': [{d:'05.11',v:57.5},{d:'19.11',v:60},{d:'26.11',v:65},{d:'03.12',v:80},{d:'10.12',v:67.5},{d:'12.12',v:82.5},{d:'17.12',v:70},{d:'06.01',v:60},{d:'12.01',v:80},{d:'14.01',v:70},{d:'23.01',v:82.5},{d:'26.01',v:75},{d:'04.02',v:85},{d:'13.02',v:85},{d:'16.02',v:90},{d:'25.02',v:87.5}],
+    'Сгибания ног': [{d:'05.11',v:15},{d:'19.11',v:15},{d:'26.11',v:20},{d:'10.12',v:22.5},{d:'17.12',v:25},{d:'06.01',v:22.5},{d:'14.01',v:25},{d:'26.01',v:27.5},{d:'13.02',v:30},{d:'25.02',v:30}],
+    'Жим платформы': [{d:'24.11',v:25},{d:'26.11',v:25},{d:'03.12',v:15},{d:'10.12',v:25},{d:'12.12',v:25},{d:'17.12',v:30},{d:'24.12',v:30},{d:'06.01',v:25},{d:'14.01',v:30},{d:'23.01',v:35},{d:'26.01',v:35},{d:'04.02',v:40},{d:'13.02',v:40},{d:'16.02',v:25},{d:'25.02',v:45}],
+    'Тяга горизонтальная': [{d:'05.11',v:21},{d:'10.11',v:19},{d:'19.11',v:21},{d:'24.11',v:21},{d:'26.11',v:23.5},{d:'03.12',v:21},{d:'10.12',v:23.5},{d:'12.12',v:23.5},{d:'17.12',v:28},{d:'24.12',v:23.5},{d:'12.01',v:21},{d:'23.01',v:23.5},{d:'26.01',v:28},{d:'04.02',v:28},{d:'13.02',v:28},{d:'16.02',v:28},{d:'25.02',v:28}],
+    'Подтягивания': [{d:'05.11',v:75},{d:'19.11',v:75},{d:'26.11',v:75},{d:'10.12',v:75},{d:'17.12',v:73},{d:'26.01',v:73},{d:'25.02',v:73}],
+    'Махи на плечи': [{d:'10.11',v:2},{d:'24.11',v:2},{d:'26.11',v:2},{d:'03.12',v:3},{d:'10.12',v:2},{d:'12.12',v:3},{d:'17.12',v:3},{d:'24.12',v:3},{d:'12.01',v:3},{d:'14.01',v:3},{d:'23.01',v:3},{d:'26.01',v:3},{d:'04.02',v:4},{d:'16.02',v:4},{d:'25.02',v:3}],
+    'Разгибания трицепс': [{d:'10.11',v:8},{d:'24.11',v:10},{d:'26.11',v:11},{d:'03.12',v:11},{d:'10.12',v:11},{d:'12.12',v:12.5},{d:'17.12',v:11},{d:'24.12',v:12.5},{d:'12.01',v:12.5},{d:'14.01',v:13},{d:'23.01',v:12.5},{d:'04.02',v:13},{d:'16.02',v:12.5},{d:'25.02',v:13}],
+    'Рычаг блок': [{d:'10.11',v:15},{d:'24.11',v:15},{d:'03.12',v:17.5},{d:'12.12',v:17.5},{d:'24.12',v:17.5},{d:'12.01',v:15},{d:'23.01',v:20},{d:'04.02',v:20},{d:'16.02',v:20}],
+    'Жим в тренажере': [{d:'10.11',v:10},{d:'24.11',v:12.5},{d:'03.12',v:12.5},{d:'12.12',v:12.5},{d:'24.12',v:12.5},{d:'12.01',v:12.5},{d:'23.01',v:12.5},{d:'04.02',v:12.5},{d:'16.02',v:12.5}],
+    'Приседания с гирей': [{d:'17.12',v:8},{d:'06.01',v:8},{d:'14.01',v:8},{d:'26.01',v:8},{d:'13.02',v:8},{d:'25.02',v:8}]
+  };
+  const exNames = Object.keys(exData);
+  let activeEx = exNames[0];
+
+  function renderEx(name) {
+    const d = exData[name];
+    if (exChartInst) exChartInst.destroy();
+    const isGrav = name.includes('гивания') || name.includes('Подтяг');
+    exChartInst = new Chart(document.getElementById('exChart'), {
+      type: 'line',
+      data: {
+        labels: d.map(p => p.d),
+        datasets: [{ label: name, data: d.map(p => p.v), borderColor: ACCENT2, borderWidth: 2.5,
+          pointBackgroundColor: ACCENT2, pointRadius: 5, pointHoverRadius: 8,
+          fill: true, backgroundColor: (ctx) => { const g=ctx.chart.ctx.createLinearGradient(0,0,0,300); g.addColorStop(0,'rgba(124,92,191,0.3)'); g.addColorStop(1,'rgba(124,92,191,0)'); return g; }, tension: 0.3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a2e', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12,
+          callbacks: { label: ctx => isGrav ? ` Противовес: ${ctx.parsed.y} кг (↓ = тяжелее)` : ` ${ctx.parsed.y} кг` } } },
+        scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { reverse: isGrav, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => v + ' кг' } } }
+      }
+    });
+  }
+
+  const te = document.getElementById('exTabs');
+  exNames.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'ex-tab' + (n === activeEx ? ' active' : '');
+    b.textContent = n;
+    b.onclick = () => { activeEx = n; document.querySelectorAll('.ex-tab').forEach(x => x.classList.remove('active')); b.classList.add('active'); renderEx(n); };
+    te.appendChild(b);
+  });
+  renderEx(activeEx);
+
+  // Weight chart
+  new Chart(document.getElementById('weightChart'), {
+    type: 'line',
+    data: { labels: WEIGHT_DATA.map(d => d.d), datasets: [{ data: WEIGHT_DATA.map(d => d.w), borderColor: ACCENT3, borderWidth: 2.5, pointBackgroundColor: ACCENT3, pointRadius: 6, pointHoverRadius: 9, fill: false, tension: 0.3 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a2e', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 10, callbacks: { label: ctx => ` ${ctx.parsed.y} кг` } } },
+      scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' } }, y: { min: 75, max: 80, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => v + ' кг' } } } }
+  });
+
+  // Measurements cards (clickable → detail overlay)
+  const mg = document.getElementById('measGrid');
+  for (const [name, d] of Object.entries(MEASUREMENTS)) {
+    const val = d.after !== null ? d.after : d.before;
+    let ds = '—', dc = 'zero';
+    if (d.after !== null) { const dd = d.after - d.before; ds = (dd > 0 ? '+' : '') + dd + ' см'; dc = dd < 0 ? 'neg' : dd > 0 ? 'pos' : 'zero'; }
+    const el = document.createElement('div');
+    el.className = 'meas-item';
+    el.innerHTML = `<div class="meas-name">${name}</div><div class="meas-values"><span class="meas-now">${val}</span><span class="meas-unit">см</span></div><div class="meas-delta ${dc}">${ds}</div>`;
+    el.onclick = openMeasurements;
+    mg.appendChild(el);
+  }
+});
+</script>
+</body>
+</html>
